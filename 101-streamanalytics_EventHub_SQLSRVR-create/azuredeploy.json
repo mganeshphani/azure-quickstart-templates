@@ -1,0 +1,183 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.1.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "southcentralus",
+      "allowedValues": [
+        "southcentralus",
+        "northcentralus",
+        "centralus",
+        "eastus",
+        "eastus2"
+      ],
+      "metadata": {
+        "description": "Deployment location of where ASA job will be installed"
+      }
+    },
+    "JobName": {
+      "type": "string",
+      "defaultValue": "StreamAnalyticsJob",
+      "metadata": {
+        "description": "Name of the Stream analytics job resource"
+      }
+    },
+    "inputName":{
+      "type": "string",
+      "defaultValue": "StreamAnalyticsInput",
+      "metadata": {
+        "description": "Name of the Stream analytics Input entity"
+      }
+    },
+    "inputeventHubName":{
+      "type": "string",
+      "metadata": {
+        "description": "Name of the EventHub to be used as input"
+      }
+    },
+    "inputserviceBusNamespace":{
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Servicebus namespace behind eventhub input"
+      }
+    },
+    "inputsharedAccessPolicyName":{
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Eventhub Shared Access Policy"
+      }
+    },
+    "inputsharedAccessPolicyKey":{
+      "type": "string",
+      "metadata": {
+        "description": "key of the EventHub Shared Access Policy"
+      }
+    },
+    "transformationName":{
+      "type": "string",
+      "defaultValue": "Query",
+      "metadata": {
+        "description": "Name of Transformation Query"
+      }
+    },
+    "transformationQuery":{
+      "type": "string",
+      "metadata": {
+        "description":"Query used with for transformation"
+      }
+    },
+    "outputName":{
+      "type": "string",
+      "defaultValue": "SQLServer",
+      "metadata": {
+        "description": "Name of Output Entity in ASA job"
+      }
+    },
+    "outputSQLServerName":{
+      "type": "string",
+      "metadata": {
+        "description": "Name of Output SQL Server"
+      }
+    },
+    "outputSQLDBName":{
+      "type": "string",
+      "metadata": {
+        "description": "Name of Output SQL Server DB"
+      }
+    },
+    "outputSQLTableName":{
+      "type": "string",      
+      "metadata": {
+        "description": "Name of Output SQL Server DB Table"
+      }
+    },
+    "outputSQLUserName":{
+      "type": "string",
+      "metadata": {
+        "description": "Output SQL Server User Name"
+      }
+    },
+    "outputSQLPassword":{
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server User Password"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "name": "[parameters('JobName')]",
+      "type": "Microsoft.StreamAnalytics/streamingjobs",
+      "apiVersion": "2016-03-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "Standard"
+        },
+        "outputStartMode": "JobStartTime",
+        "eventsOutOfOrderPolicy": "Adjust",
+        "outputErrorPolicy": "Stop",
+        "eventsOutOfOrderMaxDelayInSeconds": 0,
+        "eventsLateArrivalMaxDelayInSeconds": 5,
+        "dataLocale": "en-US",
+        "compatibilityLevel": "1.0",
+        "package": null,
+        "inputs": [
+          {
+            "name":  "[parameters('inputName')]",
+            "type": "Microsoft.StreamAnalytics/streamingjobs/inputs",
+            "properties": {
+              "type": "Stream",
+              "datasource": {
+                "type": "Microsoft.ServiceBus/EventHub",
+                "properties": {
+                  "eventHubName":  "[parameters('inputeventHubName')]",
+                  "serviceBusNamespace":  "[parameters('inputserviceBusNamespace')]",
+                  "sharedAccessPolicyName":  "[parameters('inputsharedAccessPolicyName')]",
+                  "sharedAccessPolicyKey":  "[parameters('inputsharedAccessPolicyKey')]"
+                }
+              },
+              "compression": {
+                "type": "None"
+              },
+              "serialization": {
+                "type": "Json",
+                "properties": {
+                  "encoding": "UTF8"
+                }
+              }
+            }
+          }
+        ],
+        "transformation": {
+          "name": "[parameters('transformationName')]",
+          "properties": {
+            "streamingUnits": 1,
+            "query": "[parameters('transformationQuery')]"
+          }
+        },
+        "outputs": [
+          {
+            "name": "[parameters('outputName')]",
+            "type": "Microsoft.StreamAnalytics/streamingjobs/outputs",
+            "properties": {
+              "datasource": {
+                "type": "Microsoft.Sql/Server/Database",
+                "properties": {
+                  "server": "[parameters('outputSQLServerName')]",
+                  "database": "[parameters('outputSQLDBName')]",
+                  "table": "[parameters('outputSQLTableName')]",
+                  "user": "[parameters('outputSQLUserName')]",
+                  "password": "[parameters('outputSQLPassword')]"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {}
+}
